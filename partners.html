@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>partners</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/partners.css">
+    <link rel="stylesheet" href="css/navbar.css">
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <a class="navbar-brand">
+            <!-- <img src="images/gsn.logostamp_blue.png" alt="" class="img-logo"> -->
+        </a>
+
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a href="index.html" class="nav-item">
+                   <!-- GS|Explorer Map -->
+                   <img src="images/wall-logo_small.jpg" alt="logo-2" class="img-logo">
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="partners mt-3" id="partners">
+         
+        </div>
+    </div>
+   
+
+    <script>
+        let partners = document.getElementById("partners");
+
+        d3.csv('data.csv')
+        .then(data => {
+            console.log(data);
+
+            createCards(data);
+        });
+
+        // 
+        function createCards(data) {
+            data.forEach(bus => {
+                partners.innerHTML += "<div class='card'>"+
+                    "<div class='card-h'><div class='card-content'><img src='images/"+bus.logo+"' class='img'>"+
+                    "<div><a class='link' href='/www."+bus.link+"'><b>"+bus.name +"</b></a>"+
+                    "<p>"+ bus.category+"</p></div></div></div>"+
+                    "<div class='card-info'><p class='item'><span></span>"+bus.address+"</p>"+
+                    "<p class='item'>"+
+                    "<button class='btn btn-primary btn-sm btn-direction' data-name='"+bus.name+"' data-coord='"+
+                        bus.lng +","+ bus.lat +
+                        "' data-address='"+bus.address + "'" +
+                    "'>Directions</button>"+
+                    "<button class='btn btn-primary btn-sm'>Class Times</button></p>"+
+                    "</div>"+
+                    "</div>";
+
+                // add event listener
+            });
+
+            // add eventListenerr
+
+            var directionBtns = document.querySelectorAll(".btn-direction");
+            directionBtns.forEach(btn => {
+                btn.addEventListener("click", function() {
+                    // get the business name
+                    let coordinates = btn.getAttribute("data-coord");
+                    let address = btn.getAttribute("data-address");
+
+                    window.location.assign("search.html?address=" + address + "&coordinates=" + coordinates);
+                });
+                
+            });
+        }
+    </script>
+</body>
+</html>

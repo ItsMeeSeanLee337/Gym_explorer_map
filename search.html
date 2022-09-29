@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src='https://npmcdn.com/csv2geojson@latest/csv2geojson.js'></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.min.js"></script>
+    <link
+        rel="stylesheet"
+        href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.css"
+        type="text/css"
+    />
+    <!-- Promise polyfill script required to use Mapbox GL Geocoder in IE 11 -->
+    <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.min.js"></script>
+    <link rel="stylesheet" href="css/search.css">
+    <link rel="stylesheet" href="css/navbar.css">    
+</head>
+    <body>
+        <div class="container-fluid">
+            <div class="search-section" id="side-tab">
+                <div class="input-group" id="search">
+                    <input type="text" class="form-control" 
+                        aria-label="Location" id="location-bar" placeholder="Search">
+
+                    <div class="input-group-prepend" id="reset-button">
+                        <span class="input-prepend-text">
+                            <i class="fa fa-close"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="geolocate" id="geolocate">
+                    <span><i class="fa fa-map-marker"></i></span>
+                    <span>
+                        Current Location
+                    </span>
+                </div>
+
+                <div class="side-section" id="side-section">
+                    <!-- <span>Results</span> -->
+                </div>
+
+                <div class="search-collapse-btn" id="collapse-btn"></div>
+            </div>
+
+
+            <div class="directions close" id="directions">
+                <span class="close-btn" id="close-btn">
+                    <i class="fa fa-times"></i>
+                </span>
+
+                <!-- Directions -->
+                <div class="direction-links my-2">
+                    <a href="#" class="btn btn-sm btn-primary" id="direction-link">Google Directions</a>
+                </div>
+                
+                <!-- Current location -->
+                <div class="input-tab">
+                    <div class="input-group mb-2" id="start">        
+                        <!-- <input type="text" class="form-control" 
+                            aria-label="Location"  placeholder="Choose a starting point or click on the map"> -->
+                    </div>
+
+                    <div class="input-group" id="destination">        
+                        <!-- <input type="text" class="form-control" 
+                            aria-label="Location" id="destination" placeholder="Destination ..."> -->
+                    </div>
+                </div>
+                <!--  -->
+                <div id="instructions" class="instructions">
+
+                </div>
+            </div>
+
+            <div class="map" id="map"></div>
+            <div class="side-section" id="side-section">
+                <!-- <span>Results</span> -->
+            </div>
+        </div>
+    <script src='https://unpkg.com/@turf/turf/turf.min.js'></script>
+    <script>
+        var isMainPage = false;
+        var userLocation = [];
+        var proximityDistance = 20;
+        var isDirectionTabOpen = false;
+        var geolocateButton = document.getElementById('geolocate');
+        var searchSection = document.getElementById("search");
+        var instructions = document.getElementById('instructions');
+        var resetButtonForm = document.getElementById("reset-button")
+        var isPopupOpenEvent = false;
+
+        var directionInfo = {
+            start:[],
+            stop:[]
+        };
+
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYmVubnl0cm92YXRvIiwiYSI6ImNrZDcwdTVwbTE4amEyem8yZWdkNHN3ZmoifQ.r3Llqtnwfqqju2zfzE-fvA';
+
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11', 
+            // style:'mapbox://styles/bennytrovato/ckectzw9a006j19p4fmz7feqy',
+            center: [-96.6062800476281,  40.19020391149792],
+            zoom: 3,
+        });
+
+        var canvas = map.getCanvasContainer();
+
+        // create a mapbox control
+        let navigation = new mapboxgl.NavigationControl();
+
+        map.addControl(navigation, "bottom-right");
+
+        // Add geolocate control to the map.
+        var geoControl = new mapboxgl.GeolocateControl({
+            positionOptions: {
+                enableHighAccuracy: true
+                },
+                trackUserLocation: false
+        });
+
+        geoControl.on('geolocate', function(data) {
+            console.log(data.coords.latitude);
+            let location = [data.coords.latitude, data.coords.longitude];
+            console.log(location);
+
+            // update user location
+            directionInfo.start = [...location].reverse();
+
+            geocoderOne.setInput([...location].toString());
+            geocoderOne.query([...location].toString());
+
+            userLocation = [...location].reverse();
+
+            // get the schools in order
+            getClosestPoint([...location].reverse());
+        });
+
+        geoControl.on('error', function(e) {
+            console.log(error);
+
+            alert(error.message);
+        });
+
+        map.addControl(
+            geoControl, 
+            'top-right'
+        );
+    
+        geolocateButton.addEventListener("click", function(e) {
+            geoControl.trigger();
+        });
+
+        // Direcions
+        function getDirections({start, stop}, type="driving") {
+            console.log(start, stop);
+            var coordinates = start.toString() + ';' + stop.toString();
+            
+            var url =
+                'https://api.mapbox.com/directions/v5/mapbox/'+type+'/' + coordinates +
+                '?steps=true&geometries=geojson&access_token=' +  mapboxgl.accessToken;
+
+            console.log(url);
+            fetch(url)
+            .then(res => res.json())
+            .then(directions => {
+                console.log(directions);
+                if(directions.code != "Ok") {
+                    throw new Error(directions.message);
+                    return;
+                }
+
+                var data = directions.routes[0];
+                var steps = data.legs[0].steps;
+
+                
+                var route = data.geometry.coordinates;
+                var geojson = {
+                    'type': 'Feature',
+                    'properties': {},
+                    'geometry': {
+                        'type': 'LineString',
+                        'coordinates': route
+                    }
+                };
+
+                console.log(geojson);
+                console.log(steps);
+
+                addRoute(geojson);
+                addDirection(steps, data);
+                    
+
+            })
+            .catch(error => {
+                instructions.innerHTML = "<p class='text-danger'>"+error.message+"</p>";
+
+                console.log(error);
+            });
+        }
+
+        // add route
+        function addRoute(geojson) {
+                // if the route already exists on the map, we'll reset it using setData
+            if (map.getSource('route')) {
+                map.getSource('route').setData(geojson);
+            }
+            // otherwise, we'll make a new request
+            else {
+                map.addLayer({
+                'id': 'route',
+                    'type': 'line',
+                    'source': {
+                        'type': 'geojson',
+                        'data': {
+                        'type': 'Feature',
+                        'properties': {},
+                        'geometry': {
+                            'type': 'LineString',
+                            'coordinates': geojson.geometry.coordinates
+                        }
+                        }
+                    },
+                    'layout': {
+                        'line-join': 'round',
+                        'line-cap': 'round'
+                    },
+                    'paint': {
+                        'line-color': '#3887be',
+                        'line-width': 5,
+                        'line-opacity': 0.75
+                    }
+                    });
+                }
+
+            // close the pop
+            currentPopup.remove();
+
+            // zoom to street layer
+            if(geojson.geometry.coordinates.length != 0) {
+                fitToRouteBounds(geojson);
+            }
+            
+        }
+
+        // add directions
+        function addDirection(steps, data) {
+            // console
+            var tripInstructions = [];
+            for (var i = 0; i < steps.length; i++) {
+                tripInstructions.push('<br><li>' + steps[i].maneuver.instruction) +
+                '</li>';
+                instructions.innerHTML =
+                '<br><span class="duration bold">Duration: ' +
+                Math.floor(data.duration / 60) +
+                ' min,  </span><span class="bold"> Distance '+ (data.distance/1600).toFixed(1)+' miles</span>' +
+                tripInstructions;
+            }
+        }
+
+        function clearInstructionsDiv() {
+            instructions.innerHTML = "";
+        }
+
+        function fitToRouteBounds(route) {
+            // calculate the layer bounds
+            let bounds = turf.bbox(route);
+
+            console.log(bounds);
+
+            // get the device width
+
+            let width = window.innerWidth;
+
+            // fit the bounds to the map
+            let paddingLeft = width < 798 ? 50 : 380;
+            map.fitBounds(bounds, {
+                padding: {top: 50, bottom:50, left: paddingLeft, right: 50}
+            });
+        }
+
+        // toggle side section
+        var toggleButton = document.getElementById("collapse-btn");
+        var closeButton = document.getElementById("close-btn");
+        var openDirection = document.getElementById("toggle-direction");
+        var sidetab = document.getElementById('side-tab');
+        var logoControlSection = document.getElementsByClassName("mapboxgl-ctrl-bottom-left")[0];
+        var directionTab = document.getElementById('directions');
+
+        resetButtonForm.addEventListener("click", function(e) {
+            searchBar.value = "";
+            searchBar.dispatchEvent(event);
+        });
+
+        toggleButton.addEventListener('click', function(e) {
+            sidetab.classList.toggle('side-tab-close');
+
+            // toggleDirectionTab()
+            logoControlSection.classList.toggle('logo-open');
+
+            // condition on direction tab
+            if(!directionTab.classList.contains("close")) {
+                toggleSearchTab();
+                directionTab.classList.toggle("close");
+            }
+
+            e.stopPropagation();
+        });
+
+        closeButton.addEventListener('click', function(e) {
+            directionTab.classList.add("close");
+
+            isDirectionTabOpen = false;
+
+            toggleSearchTab();
+            updateRoute([]);
+            updateStartLayer([]);
+            updateDestinationLayer([]);
+            directionInfo.start = [];
+
+            geocoderOne.clear();
+            geocoderTwo.clear();
+
+
+            if(window.location.search) {
+                window.location.assign(window.location.origin + window.location.pathname);
+            }
+            
+        });
+
+        // openDirection.addEventListener('click', function(e) {
+        //    toggleSearchTab();
+        //    toggleDirectionTab();
+
+        //    isDirectionTabOpen = true;
+        // });
+
+        function toggleDirectionTab() {
+            directionTab.classList.remove("close");
+            isDirectionTabOpen = true;
+        }
+
+        function toggleSearchTab() {
+            searchSection.classList.toggle('close');
+        }
+
+        function toggleSuggestions() {
+            let suggestionDivs = document.querySelectorAll(".suggestions");
+
+            suggestionDivs.forEach(div => {
+                let style = getComputedStyle(div);
+
+                if(style.display != "none") {
+                    div.style.display = "none";
+                }
+            }); 
+        }
+
+        // Bravabobby@gmail.com
+        // Temp123!
+
+        map.on("load", function(e) {
+            map.on('click', function(e) {
+                console.log('map click');
+                // 
+                if(!isDirectionTabOpen) {
+                    return;
+                };
+
+                var coordsObj = e.lngLat;
+                canvas.style.cursor = '';
+                var coords = Object.keys(coordsObj).map(function(key) {
+                    return coordsObj[key];
+                });
+
+                directionInfo.start = coords;
+
+                // geocode the coordinates
+                geocoderOne.setInput([...coords].reverse().toString());
+                geocoderOne.query([...coords].reverse().toString());
+                
+                var end = {
+                    'type': 'FeatureCollection',
+                    'features': [
+                    {
+                        'type': 'Feature',
+                        'properties': {},
+                        'geometry': {
+                        'type': 'Point',
+                        'coordinates': coords
+                        }
+                    }
+                    ]
+                };
+
+                if(isDirectionTabOpen) {
+                    // if()
+                    updateStartLayer(coords);
+
+                    if(directionInfo.stop.length == 0) {
+
+                    }else {
+                        getDirections(directionInfo, "driving");
+                    }
+                }
+                
+            });
+        });
+
+        function updateStartLayer(coords) {
+            let source = {
+                    'type': 'geojson',
+                    'data': {
+                    'type': 'FeatureCollection',
+                    'features': [
+                        {
+                        'type': 'Feature',
+                        'properties': {},
+                        'geometry': {
+                            'type': 'Point',
+                            'coordinates': coords
+                        }
+                        }
+                    ]
+                    }
+            };
+
+            if (map.getLayer('start')) {
+                map.getSource('start').setData(source.data);
+            } else {
+                map.addLayer({
+                'id': 'start',
+                'type': 'circle',
+                'source': source,
+                'paint': {
+                    'circle-radius': 10,
+                    'circle-color': '#00ff00'
+                }
+                });
+            }
+        }
+
+        function updateDestinationLayer(coords) {
+            let source = {
+                    'type': 'geojson',
+                    'data': {
+                    'type': 'FeatureCollection',
+                    'features': [
+                        {
+                        'type': 'Feature',
+                        'properties': {},
+                        'geometry': {
+                            'type': 'Point',
+                            'coordinates': coords
+                        }
+                        }
+                    ]
+                    }
+            };
+
+            if (map.getLayer('end')) {
+                map.getSource('end').setData(source.data);
+            } else {
+                map.addLayer({
+                'id': 'end',
+                'type': 'circle',
+                'source': source,
+                'paint': {
+                    'circle-radius': 10,
+                    'circle-color': '#f30'
+                }
+                });
+            }
+        }
+        
+        // add geocoders 
+        function forwardGeocoder(query) {
+            var matchingFeatures = [];
+            for (var i = 0; i < searchData.length; i++) {
+                var feature = searchData[i];
+                // handle queries with different capitalization than the source data by calling toLowerCase()
+                if (
+                feature.properties.name
+                .toLowerCase()
+                .search(query.toLowerCase()) !== -1
+                ) {
+                    // add a tree emoji as a prefix for custom data results
+                    // using carmen geojson format: https://github.com/mapbox/carmen/blob/master/carmen-geojson.md
+                    feature['place_name'] = ' 🥋 ' + feature.properties.name;
+                    feature['center'] = feature.geometry.coordinates;
+                    feature['place_type'] = ['park'];
+                    matchingFeatures.push(feature);
+                }
+            }
+            return matchingFeatures;
+        }
+
+        var geocoderOne = new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            localGeocoder: forwardGeocoder,
+            reverseGeocode:true,
+            zoom: 14,
+            placeholder: 'Start Address e.g. Wright Fighting Concepts',
+            mapboxgl: mapboxgl
+        });
+
+        geocoderOne.addTo('#start');
+
+
+        geocoderOne.on("clear", function(e) {
+            clearInstructionsDiv();
+
+            updateStartLayer([]);
+            updateRoute([]);
+
+            directionInfo.start = [];
+        });
+
+        // update start
+        geocoderOne.on("result", function(result) {
+            console.log(result);
+            directionInfo.start = result.result.center;
+
+            updateStartLayer(directionInfo.start);
+
+            if(directionInfo.stop.length != 0) {
+                getDirections(directionInfo, "driving");
+            }
+
+            // clearInstructionsDiv();
+            toggleSuggestions();
+        });
+
+        geocoderOne.on('loading', function(query) {
+            updateRoute();
+        });
+
+        var geocoderTwo = new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            localGeocoder: forwardGeocoder,
+            zoom: 14,
+            reverseGeocode:true,
+            placeholder: 'Destination ....',
+            mapboxgl: mapboxgl
+        });
+        
+        geocoderTwo.addTo('#destination');
+
+        geocoderTwo.on("result", function(result) {
+            directionInfo.stop = result.result.center;
+
+            updateDestinationLayer(directionInfo.stop);
+
+            if(directionInfo.start.length != 0) {
+                getDirections(directionInfo, "driving");
+            }
+
+            // clearInstructionsDiv();
+            toggleSuggestions();
+        });
+
+        geocoderTwo.on("clear", function(e) {
+            clearInstructionsDiv();
+            updateDestinationLayer([]);
+            updateRoute();
+
+            directionInfo.stop = [];
+        });
+
+        geocoderTwo.on('loading', function(query) {
+            console.log(query);
+            updateRoute();
+        });
+
+
+        function updateRoute() {
+            var geojson = {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                        'coordinates': []
+                }
+            };
+
+            addRoute(geojson);            
+        }
+
+        // get schools within 20 miles from user location
+        function getClosestPoint(center) {
+            let searchWithin = turf.buffer(
+                turf.point(center),
+                proximityDistance,
+                {
+                    units: 'miles'
+                }
+            );
+
+            let points = turf.featureCollection(searchData);
+            console.log(points);
+
+            let pointInPolygon = turf.pointsWithinPolygon(points, searchWithin);
+
+            // update filter data
+            filterData = JSON.parse(JSON.stringify(pointInPolygon.features));
+
+            // call createlist method.
+            cleanFilterData(filterData);
+        }
+    </script>
+    <script src="js/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GS|Explorer Map</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css" rel="stylesheet" />
+
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+   <script src="https://d3js.org/d3.v5.min.js"></script>
+   <script src='https://npmcdn.com/csv2geojson@latest/csv2geojson.js'></script>
+   <link rel="stylesheet" href="css/style.css">
+   <link rel="stylesheet" href="css/navbar.css">
+</head>
+<body>
+    <div class="main">
+        <nav class="navbar">
+            <a class="navbar-brand">
+                <img src="images/gsn.logostamp_blue.png" alt="" class="img-logo">
+            </a>
+
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-item">
+                       <!-- GS|Explorer Map -->
+                       <img src="images/wall-logo_small.jpg" alt="logo-2" class="img-logo">
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="section-links">
+            <!-- <div class="search-tab">
+                <h3>Find Nearest Location</h3>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text">
+                          <i class="fa fa-map-marker"></i>
+                      </span>
+                    </div>
+
+                    <input type="text" class="form-control" 
+                        aria-label="Location" id="location-bar" placeholder="Business Address, ZipCode ....">
+                    <div class="input-group-append">
+                      <span class="input-group-text">
+                          <i class="fa fa-search"></i>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="result" id="result">
+                  </div>
+            </div> -->
+            <h1 data-v-4c473e8c="" class="panel-title">
+                <h1 style= "text-align:center;font-size:80px;">Explore our Gyms</h1>
+
+            <div class="links row">
+                <a href="search.html" class="custom-link col-md-5">
+                    <span class="custom-link-span px-3 py-3">
+                        <i class="fa fa-map-marker"></i>
+                    </span>
+                    <span class="px-2 text-label">Gym Map</span>
+                </a>
+
+                <a href="partners.html" class="custom-link col-md-5">
+                    <span class="custom-link-span px-2 py-3">
+                        <i class="fa fa-users"></i>
+                    </span>
+                    <span class="px-2  text-label">Gyms by State</span>
+                </a>
+
+                <a href="become_partner.html" class="custom-link col-md-5">
+                    <span class="custom-link-span px-2 py-3">
+                        <i class="fa fa-user-plus"></i>
+                    </span>
+                    <span class="px-2  text-label">Add Your Gym</span>
+                </a>
+
+                <a href="https://www.groundstandard.com/about-us" class="custom-link col-md-5">
+                    <span class="custom-link-span px-3 py-3">
+                        <i class="fa fa-info-circle"></i>
+                    </span>
+                    <span class="px-2  text-label">About Us</span>
+                </a>               
+            </div>
+        </div>
+        
+        <!-- <div class="footer">
+
+        </div> -->
+    </div>
+    <div class="" id="map">
+    </div>
+
+    <!-- <script src="main.js"></script>
+    <script src="search.js"></script> -->
+</body>
+</html>
